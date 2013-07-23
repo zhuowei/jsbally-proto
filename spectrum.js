@@ -34,6 +34,8 @@ var colorHorizontalBoundReg = 0;
 
 var astrocadeInterruptLocation = 0;
 
+var oldBorderIntensity = -1;
+
 
 function spectrum_init() {
 	for (var i = 0x0000; i < 0x2000; i++) {
@@ -210,8 +212,10 @@ function writeport(addr, val) {
 	if (a < 8) {
 		colorMap[a] = val;
 		//console.log("Color map: " + a + ":" + val);
+		updateBorder();
 	} else if (a == 0x9) {
 		colorHorizontalBoundReg = val;
+		updateBorder();
 	} else if (a == 0xa) {
 		//console.log("Vblank line: " + (val >> 1));
 		vBlankLine = val;
@@ -219,6 +223,7 @@ function writeport(addr, val) {
 		//console.log("Color map mass write: " + val);
 		colorMap[colorMapMassWritePointer++] = val;
 		if (colorMapMassWritePointer > 7) colorMapMassWritePointer = 0;
+		updateBorder();
 	} else if (a == 0xc) {
 		magicChipRegister = val;
 		//console.log("Magic chip mode: " + val);
@@ -481,4 +486,13 @@ function loadAstrocadeRom(rom) {
 	for (var i = 0; i < rom.length; i++) {
 		memory[0x2000 + i] = rom.charCodeAt(i);
 	}
+}
+
+function updateBorder() {
+	var intensity = colorMap[(colorHorizontalBoundReg >> 6) & 0x3] & 0x7;
+	if (intensity == oldBorderIntensity) return;
+	var borderColour = [intensity * 32, intensity * 32, intensity * 32];
+	var borderColourCss = 'rgb('+borderColour[0]+','+borderColour[1]+','+borderColour[2]+')';
+	canvas.style.borderColor = borderColourCss;
+	oldBorderIntensity = intensity;
 }
