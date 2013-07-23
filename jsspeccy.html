@@ -1,0 +1,85 @@
+<!DOCTYPE HTML>
+<html>
+	<head>
+		<title>JSSpeccy</title>
+		<style type="text/css">/* <![CDATA[ */
+			#screen {
+				border: 64px solid black;
+				width: 512px;
+				height: 384px;
+				float: left;
+				margin-right: 32px;
+			}
+		/* ]]> */</style>
+		<!--[if IE]><script type="text/javascript" src="excanvas-compressed.js"></script><![endif]-->
+		<script type="text/javascript" src="z80/z80_full.js"></script>
+		<script type="text/javascript" src="z80/z80_ops_full.js"></script>
+		<script type="text/javascript" src="spectrum.js"></script>
+		<script type="text/javascript" src="roms.js"></script>
+		<script type="text/javascript" src="sna.js"></script>
+		<script type="text/javascript" src="snapshots.js"></script>
+		<script type="text/javascript">/* <![CDATA[ */
+			var tstates = 0;
+			var flashFrame = 0;
+			var running;
+			var event_next_event;
+			function go() {
+				for (snapshot in snapshots) {
+					var opt = document.createElement('option');
+					opt.value = opt.text = snapshot;
+					document.getElementById('snapshot_chooser').appendChild(opt);
+				}
+				z80_init();
+				spectrum_init();
+			}
+			function frame() {
+				event_next_event = 69888;
+				tstates = 0;
+				z80_do_opcodes();
+				/* dumpScreen(); */
+				/* dumpKeys(); */
+				flashFrame = (flashFrame + 1) & 0x1f;
+				paintScreen();
+				z80_interrupt();
+			}
+			function dumpScreen() {
+				var out = '';
+				for (var i = 0x4000; i < 0x5800; i++) {
+					out += Number(memory[i]).toString(16) + ' ';
+				}
+				document.getElementById('screendump').value = out;
+			}
+			function dumpKeys() {
+				var out = '';
+				for (var i = 0; i < 8; i++) {
+					out += Number(keyStates[i]).toString(16) + ' ';
+				}
+				document.getElementById('keydump').value = out;
+			}
+			function run() {
+				if (!running) return;
+				frame();
+				setTimeout(run, 20);
+			}
+			function stop() {
+				document.getElementById('status').innerHTML = 'Status: stopped';
+				running = false;
+			}
+			function reset() {
+				z80_reset();
+			}
+		/* ]]> */</script>
+	</head>
+	<body onload="go()">
+		<!-- <textarea rows="24" cols="96" id="screendump"></textarea> -->
+		<!-- <textarea id="keydump"></textarea> -->
+		<canvas id="screen" width="256" height="192"></canvas>
+		<br />
+		<p id="status">Status: stopped</p>
+		<input type="button" value="run" onclick="running = true; document.getElementById('status').innerHTML = 'Status: running'; run()" />
+		<input type="button" value="stop" onclick="stop()" />
+		<input type="button" value="reset" onclick="reset()" />
+		<br /><br />
+		<select id="snapshot_chooser" size="10" ondblclick="loadSna(snapshots[this.options[this.selectedIndex].value])"></select>
+	</body>
+</html>
