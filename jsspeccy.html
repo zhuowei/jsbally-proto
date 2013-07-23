@@ -24,11 +24,11 @@
 			var running;
 			var event_next_event;
 			function go() {
-				/*for (snapshot in snapshots) {
+				for (snapshot in snapshots) {
 					var opt = document.createElement('option');
 					opt.value = opt.text = snapshot;
 					document.getElementById('snapshot_chooser').appendChild(opt);
-				}*/
+				}
 				z80_init();
 				spectrum_init();
 			}
@@ -84,6 +84,6 @@
 		<input type="button" value="stop" onclick="stop()" />
 		<input type="button" value="reset" onclick="reset()" />
 		<br /><br />
-		<select id="snapshot_chooser" size="10" ondblclick="loadSna(snapshots[this.options[this.selectedIndex].value])"></select>
+		<select id="snapshot_chooser" size="10" ondblclick="loadAstrocadeRom(snapshots[this.options[this.selectedIndex].value])"></select>
 	</body>
 </html>

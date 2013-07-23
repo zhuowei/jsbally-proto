@@ -63,6 +63,7 @@ function spectrum_init() {
 	for (var row = 0; row < 8; row++) {
 		keyStates[row] = 0x00;
 	}
+	loadAstrocadeRom(snapshots["muncher.bin"]);
 }
 
 var keyCodes = {
@@ -282,8 +283,15 @@ function drawScreenByteWithMagicChip(addr, val) {
 }
 
 function drawScreenByteWithMagicChipPostExpand(addr, val) {
-	memory[0x4000 + addr] = val;
-	drawScreenByte(addr, val);
+	var nval = val;
+	if ((magicChipRegister & MAGIC_MODE_OR) != 0) {
+		nval |= memory[0x4000 + addr];
+	}
+	if ((magicChipRegister & MAGIC_MODE_XOR) != 0) {
+		nval ^= memory[0x4000 + addr];
+	}
+	memory[0x4000 + addr] = nval;
+	drawScreenByte(addr, nval);
 }
 
 function drawScreenByteWithoutImageDataa(addr, val) {
@@ -464,7 +472,13 @@ function paintScreen() {
 
 function paintFullScreen() {
 	/* paint attribute bytes to force repaint of whole screen */
-	for (var addr = 0x5800; addr < 0x5b00; addr++) {
-		writebyte_internal(addr, memory[addr]);
+	//for (var addr = 0x5800; addr < 0x5b00; addr++) {
+	//	writebyte_internal(addr, memory[addr]);
+	//}
+}
+
+function loadAstrocadeRom(rom) {
+	for (var i = 0; i < rom.length; i++) {
+		memory[0x2000 + i] = rom.charCodeAt(i);
 	}
 }
