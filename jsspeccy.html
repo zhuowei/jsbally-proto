@@ -24,28 +24,32 @@
 			var running;
 			var event_next_event;
 			function go() {
-				for (snapshot in snapshots) {
+				/*for (snapshot in snapshots) {
 					var opt = document.createElement('option');
 					opt.value = opt.text = snapshot;
 					document.getElementById('snapshot_chooser').appendChild(opt);
-				}
+				}*/
 				z80_init();
 				spectrum_init();
 			}
 			function frame() {
-				event_next_event = 69888;
+				var oldim = z80.im;
+				var oldi = z80.i;
+				event_next_event = 29829;
 				tstates = 0;
 				z80_do_opcodes();
-				/* dumpScreen(); */
+				//dumpScreen();
 				/* dumpKeys(); */
 				flashFrame = (flashFrame + 1) & 0x1f;
 				paintScreen();
+				if (oldim != z80.im) console.log("New interrupt mask: " + z80.im);
+				if (oldi != z80.i) console.log("New interrupt vector: " + z80.i.toString(16));
 				z80_interrupt();
 			}
 			function dumpScreen() {
 				var out = '';
-				for (var i = 0x4000; i < 0x5800; i++) {
-					out += Number(memory[i]).toString(16) + ' ';
+				for (var i = 0x4000; i < 0x5000; i++) {
+					out += Number(memory[i]).toString(4) + ((i % 40 == 39)? '\n' : ' ');
 				}
 				document.getElementById('screendump').value = out;
 			}
@@ -59,7 +63,7 @@
 			function run() {
 				if (!running) return;
 				frame();
-				setTimeout(run, 20);
+				setTimeout(run, 17);
 			}
 			function stop() {
 				document.getElementById('status').innerHTML = 'Status: stopped';
@@ -73,7 +77,7 @@
 	<body onload="go()">
 		<!-- <textarea rows="24" cols="96" id="screendump"></textarea> -->
 		<!-- <textarea id="keydump"></textarea> -->
-		<canvas id="screen" width="256" height="192"></canvas>
+		<canvas id="screen" width="160" height="102"></canvas>
 		<br />
 		<p id="status">Status: stopped</p>
 		<input type="button" value="run" onclick="running = true; document.getElementById('status').innerHTML = 'Status: running'; run()" />
