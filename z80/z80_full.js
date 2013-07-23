@@ -151,7 +151,7 @@ function z80_interrupt() {
       case 2: 
 	{
 	  var inttemp=(0x100*z80.i)+astrocadeInterruptLocation;
-	  var pcl = readbyte_internal(inttemp++); inttemp &= 0xfff; var pch = readbyte_internal(inttemp);
+	  var pcl = readbyte_internal(inttemp++); inttemp &= 0xffff; var pch = readbyte_internal(inttemp);
 	  z80.pc = pcl | (pch << 8);
 	  tstates+=19;
 	  break;
