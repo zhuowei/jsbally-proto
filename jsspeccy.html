@@ -33,8 +33,6 @@
 				spectrum_init();
 			}
 			function frame() {
-				var oldim = z80.im;
-				var oldi = z80.i;
 				event_next_event = 29829;
 				tstates = 0;
 				z80_do_opcodes();
@@ -42,8 +40,6 @@
 				/* dumpKeys(); */
 				flashFrame = (flashFrame + 1) & 0x1f;
 				paintScreen();
-				if (oldim != z80.im) console.log("New interrupt mask: " + z80.im);
-				if (oldi != z80.i) console.log("New interrupt vector: " + z80.i.toString(16));
 				z80_interrupt();
 			}
 			function dumpScreen() {
@@ -70,7 +66,14 @@
 				running = false;
 			}
 			function reset() {
-				z80_reset();
+				//z80_reset();
+				window.location.reload();
+			}
+			function startEmu() {
+				running = true;
+				document.getElementById('status').innerHTML = 'Status: running';
+				document.getElementById('snapshot_chooser').style.display = "none";
+				run();
 			}
 		/* ]]> */</script>
 	</head>
@@ -80,7 +83,7 @@
 		<canvas id="screen" width="160" height="102"></canvas>
 		<br />
 		<p id="status">Status: stopped</p>
-		<input type="button" value="run" onclick="running = true; document.getElementById('status').innerHTML = 'Status: running'; run()" />
+		<input type="button" value="run" onclick="startEmu()" />
 		<input type="button" value="stop" onclick="stop()" />
 		<input type="button" value="reset" onclick="reset()" />
 		<br /><br />

@@ -36,6 +36,14 @@ var astrocadeInterruptLocation = 0;
 
 var oldBorderIntensity = -1;
 
+var soundMassWritePointer = 0;
+
+var currentCartBank = 0;
+
+var bankSwitchedRom = true;
+
+var cartRom;
+
 
 function spectrum_init() {
 	for (var i = 0x0000; i < 0x2000; i++) {
@@ -65,7 +73,7 @@ function spectrum_init() {
 	for (var row = 0; row < 8; row++) {
 		keyStates[row] = 0x00;
 	}
-	loadAstrocadeRom(snapshots["muncher.bin"]);
+	loadAstrocadeRom(snapshots["256kdemo.bin"]);
 }
 
 var keyCodes = {
@@ -169,7 +177,7 @@ var palette = [
 ];
 
 function keyDown(evt) {
-	console.log(evt.keyCode);
+	//console.log(evt.keyCode);
 	var keyCode = keyCodes[evt.keyCode];
 	if (keyCode == null) return;
 	keyStates[keyCode.row] |= keyCode.mask;
@@ -189,12 +197,39 @@ function contend_port(addr) {
 function readbyte(addr) {
 	return readbyte_internal(addr);
 }
-function readbyte_internal(addr) {
-	/*if (addr < 0x2010) {
-		console.log(addr.toString(16));
-	}*/
+
+var readbyte_internal = readbyte_internal_normal;
+
+function readbyte_internal_normal(addr) {
 	return memory[addr];
 }
+
+function readbyte_internal_bankswitch_512k(addr) {
+	if (addr >= 0x3f80 && addr <= 0x3fff) {
+		currentCartBank = addr - 0x3f80;
+		//console.log("Switched to bank " + currentCartBank.toString(16));
+		return 0xff;
+	} else if (addr >= 0x2000 && addr < 0x3000) {
+		return cartRom[127 << 12 | (addr & 0xfff)]; //bank 63
+	} else if (addr >= 0x3000 && addr < 0x3f80) {
+		return cartRom[currentCartBank << 12 | (addr & 0xfff)];
+	}
+	return memory[addr];
+}
+
+function readbyte_internal_bankswitch_256k(addr) {
+	if (addr >= 0x3fc0 && addr <= 0x3fff) {
+		currentCartBank = addr - 0x3fc0;
+		//console.log("Switched to bank " + currentCartBank.toString(16));
+		return 0xff;
+	} else if (addr >= 0x2000 && addr < 0x3000) {
+		return cartRom[63 << 12 | (addr & 0xfff)]; //bank 63
+	} else if (addr >= 0x3000 && addr < 0x3fc0) {
+		return cartRom[currentCartBank << 12 | (addr & 0xfff)];
+	}
+	return memory[addr];
+}
+
 function readport(addr) {
 	//console.log("Read port: " + (addr & 0xff).toString(16) + ": PC=" + z80.pc.toString(16));
 	//return 0x1;
@@ -229,18 +264,23 @@ function writeport(addr, val) {
 		//console.log("Magic chip mode: " + val);
 		magicChipExpandLowerHalf = false;
 	} else if (a == 0xd) {
-		if (val != 0x34) {
-			console.log("Interrupt val: " + val.toString(16) + ":" + z80.pc.toString(16));
-			console.log("Interrupt will be fetched from " + ((z80.i * 0x100) + val).toString(16));
-		}
-		
 		astrocadeInterruptLocation = val;
 	} else if (a == 0xe) {
-		console.log("Interrupt:" + val + "timer: " + ((val & 0x8) != 0) + " pen:" + ((val & 0x2) != 0));
+		//console.log("Interrupt:" + val + "timer: " + ((val & 0x8) != 0) + " pen:" + ((val & 0x2) != 0));
 	} else if (a == 0x19) {
 		magicExpandReg = val;
-	} else if (a >= 0x10 && a <= 0x18) {
-		//console.log("Sound: " + a.toString(16) + ":" + val.toString(16));
+	} else if (a >= 0x10 && a <= 0x17) {
+		/*console.log("Sound: " + a.toString(16) + ":" + val.toString(16));
+		if (a == 0x10) {
+			console.log("Sound master: " + val.toString(16) + ":" + z80.pc.toString(16));
+		} else if (a == 0x11) {
+			console.log("Sound A: " + val.toString(16) + ":" + z80.pc.toString(16));
+		}*/
+	} else if (a == 0x18) {
+		writeport(0x10 + soundMassWritePointer, val);
+		soundMassWritePointer = (soundMassWritePointer + 1) % 8;
+	} else if (a == 0xff) {
+		console.log("Bally Check display: " + val.toString(16));
 	}
 }
 function writebyte(addr, val) {
@@ -483,8 +523,22 @@ function paintFullScreen() {
 }
 
 function loadAstrocadeRom(rom) {
-	for (var i = 0; i < rom.length; i++) {
-		memory[0x2000 + i] = rom.charCodeAt(i);
+	bankSwitchedRom = (rom.length > 0x2000);
+	if (bankSwitchedRom) {
+		if (rom.length == 0x40000) {
+			readbyte_internal = readbyte_internal_bankswitch_256k;
+		} else {
+			readbyte_internal = readbyte_internal_bankswitch_512k;
+		}
+		cartRom = new Array(rom.length);
+		for (var i = 0; i < rom.length; i++) {
+			cartRom[i] = rom.charCodeAt(i);
+		}
+	} else {
+		readbyte_internal = readbyte_internal_normal;
+		for (var i = 0; i < rom.length; i++) {
+			memory[0x2000 + i] = rom.charCodeAt(i);
+		}
 	}
 }
 
